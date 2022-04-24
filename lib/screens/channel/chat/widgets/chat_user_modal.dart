@@ -22,7 +22,7 @@ class ChatUserModal extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final userMessages = chatStore.messages.reversed.where((message) => message.user == username).toList();
+    final userMessages = chatStore.messages.reversed.where((message) => message.ircMessage.user == username).toList();
 
     return Scaffold(
       body: SafeArea(
@@ -82,7 +82,7 @@ class ChatUserModal extends StatelessWidget {
                     reverse: true,
                     itemBuilder: (context, index) => InkWell(
                       onLongPress: () async {
-                        await Clipboard.setData(ClipboardData(text: userMessages[index].message));
+                        await Clipboard.setData(ClipboardData(text: userMessages[index].ircMessage.message));
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text('Message copied!'),
@@ -91,7 +91,7 @@ class ChatUserModal extends StatelessWidget {
                         );
                       },
                       child: ChatMessage(
-                        ircMessage: userMessages[index],
+                        ircMessage: userMessages[index].ircMessage,
                         assetsStore: chatStore.assetsStore,
                         settingsStore: chatStore.settings,
                       ),

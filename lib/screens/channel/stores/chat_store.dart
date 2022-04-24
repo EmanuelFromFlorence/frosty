@@ -7,6 +7,7 @@ import 'package:frosty/core/auth/auth_store.dart';
 import 'package:frosty/models/badges.dart';
 import 'package:frosty/models/emotes.dart';
 import 'package:frosty/models/irc.dart';
+import 'package:frosty/screens/channel/chat/widgets/chat_message.dart';
 import 'package:frosty/screens/channel/stores/chat_assets_store.dart';
 import 'package:frosty/screens/channel/stores/chat_details_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
@@ -66,7 +67,7 @@ abstract class _ChatStoreBase with Store {
 
   /// The list of chat messages to render and display.
   @readonly
-  var _messages = ObservableList<IRCMessage>();
+  var _messages = ObservableList<ChatMessage>();
 
   /// If the chat should automatically scroll/jump to the latest message.
   @readonly
@@ -99,7 +100,7 @@ abstract class _ChatStoreBase with Store {
 
     assetsStore.init();
 
-    _messages.add(IRCMessage.createNotice(message: 'Connecting to chat...'));
+    _messages.add(createMessage(IRCMessage.createNotice(message: 'Connecting to chat...')));
 
     connectToChat();
 
@@ -145,7 +146,7 @@ abstract class _ChatStoreBase with Store {
 
         switch (parsedIRCMessage.command) {
           case Command.privateMessage:
-            _messages.add(parsedIRCMessage);
+            _messages.add(createMessage(parsedIRCMessage));
             break;
           case Command.clearChat:
             _messages = IRCMessage.clearChat(messages: _messages, ircMessage: parsedIRCMessage).asObservable();
@@ -155,7 +156,7 @@ abstract class _ChatStoreBase with Store {
             break;
           case Command.notice:
           case Command.userNotice:
-            _messages.add(parsedIRCMessage);
+            _messages.add(createMessage(parsedIRCMessage));
             break;
           case Command.roomState:
             chatDetailsStore.roomState = chatDetailsStore.roomState.fromIRCMessage(parsedIRCMessage);
@@ -163,7 +164,7 @@ abstract class _ChatStoreBase with Store {
           case Command.userState:
             _userState = _userState.fromIRCMessage(parsedIRCMessage);
             if (toSend != null) {
-              _messages.add(toSend!);
+              _messages.add(createMessage(toSend!));
               toSend = null;
             }
             break;
@@ -202,8 +203,8 @@ abstract class _ChatStoreBase with Store {
         _channel?.sink.add('PONG :tmi.twitch.tv');
         return;
       } else if (message.contains('Welcome, GLHF!')) {
-        _messages
-            .add(IRCMessage.createNotice(message: "Connected to $displayName${regexEnglish.hasMatch(displayName) ? '' : ' ($channelName)'}'s chat!"));
+        _messages.add(createMessage(
+            IRCMessage.createNotice(message: "Connected to $displayName${regexEnglish.hasMatch(displayName) ? '' : ' ($channelName)'}'s chat!")));
 
         // Fetch the assets used in chat including badges and emotes.
         assetsStore.assetsFuture(
@@ -255,7 +256,7 @@ abstract class _ChatStoreBase with Store {
         if (_backoffTime > 0) {
           // Add notice that chat was disconnected and then wait the backoff time before reconnecting.
           final notice = 'Disconnected from chat, waiting $_backoffTime ${_backoffTime == 1 ? 'second' : 'seconds'} before reconnecting...';
-          _messages.add(IRCMessage.createNotice(message: notice));
+          _messages.add(createMessage(IRCMessage.createNotice(message: notice)));
         }
 
         await Future.delayed(Duration(seconds: _backoffTime));
@@ -265,7 +266,7 @@ abstract class _ChatStoreBase with Store {
 
         // Increment the retry count and attempt the reconnect.
         _retries++;
-        _messages.add(IRCMessage.createNotice(message: 'Reconnecting to chat (attempt $_retries)...'));
+        _messages.add(createMessage(IRCMessage.createNotice(message: 'Reconnecting to chat (attempt $_retries)...')));
         connectToChat();
       },
     );
@@ -299,7 +300,7 @@ abstract class _ChatStoreBase with Store {
     if (message.isEmpty) return;
 
     if (_channel == null || _channel?.closeCode != null) {
-      _messages.add(IRCMessage.createNotice(message: 'Failed to send message: disconnected from chat.'));
+      _messages.add(createMessage(IRCMessage.createNotice(message: 'Failed to send message: disconnected from chat.')));
     } else {
       // Send the message to the IRC chat room.
       _channel?.sink.add('PRIVMSG #$channelName :$message');
@@ -349,6 +350,14 @@ abstract class _ChatStoreBase with Store {
       ..insert(0, emote);
 
     textController.selection = TextSelection.fromPosition(TextPosition(offset: textController.text.length));
+  }
+
+  ChatMessage createMessage(IRCMessage message) {
+    return ChatMessage(
+      ircMessage: message,
+      assetsStore: assetsStore,
+      settingsStore: settings,
+    );
   }
 
   /// Closes and disposes all the channels and controllers used by the store.

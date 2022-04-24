@@ -11,16 +11,16 @@ part of 'chat_store.dart';
 mixin _$ChatStore on _ChatStoreBase, Store {
   final _$_messagesAtom = Atom(name: '_ChatStoreBase._messages');
 
-  ObservableList<IRCMessage> get messages {
+  ObservableList<ChatMessage> get messages {
     _$_messagesAtom.reportRead();
     return super._messages;
   }
 
   @override
-  ObservableList<IRCMessage> get _messages => messages;
+  ObservableList<ChatMessage> get _messages => messages;
 
   @override
-  set _messages(ObservableList<IRCMessage> value) {
+  set _messages(ObservableList<ChatMessage> value) {
     _$_messagesAtom.reportWrite(value, super._messages, () {
       super._messages = value;
     });

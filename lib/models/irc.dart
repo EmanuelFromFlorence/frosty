@@ -6,6 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:frosty/constants/constants.dart';
 import 'package:frosty/models/badges.dart';
 import 'package:frosty/models/emotes.dart';
+import 'package:frosty/screens/channel/chat/widgets/chat_message.dart';
 import 'package:frosty/screens/channel/stores/chat_assets_store.dart';
 import 'package:frosty/screens/settings/stores/settings_store.dart';
 import 'package:intl/intl.dart';
@@ -36,11 +37,11 @@ class IRCMessage {
   });
 
   /// Returns a list of messages where the gievn CLEARCHAT message is applied.
-  static List<IRCMessage> clearChat({required List<IRCMessage> messages, required IRCMessage ircMessage}) {
+  static List<ChatMessage> clearChat({required List<ChatMessage> messages, required IRCMessage ircMessage}) {
     // If there is no message, it means that entire chat was cleared.
     if (ircMessage.message == null) {
       messages.clear();
-      messages.add(IRCMessage.createNotice(message: 'Chat was cleared by a moderator'));
+      // messages.add(IRCMessage.createNotice(message: 'Chat was cleared by a moderator'));
       return messages;
     }
 
@@ -49,13 +50,13 @@ class IRCMessage {
 
     // Search the messages for the banned/timed-out user.
     messages.asMap().forEach((i, message) {
-      if (message.user == bannedUser) {
+      if (message.ircMessage.user == bannedUser) {
         // Mark the message for removal.
-        messages[i].command = Command.clearChat;
+        messages[i].ircMessage.command = Command.clearChat;
 
         // If timed-out, indicate the duration.
         if (banDuration != null) {
-          messages[i].tags['ban-duration'] = banDuration;
+          messages[i].ircMessage.tags['ban-duration'] = banDuration;
         }
       }
     });
@@ -64,13 +65,13 @@ class IRCMessage {
   }
 
   /// Returns a list of messages where the gievn CLEARMSG message is applied.
-  static List<IRCMessage> clearMessage({required List<IRCMessage> messages, required IRCMessage ircMessage}) {
+  static List<ChatMessage> clearMessage({required List<ChatMessage> messages, required IRCMessage ircMessage}) {
     final targetId = ircMessage.tags['target-msg-id'];
 
     // Search for the message associated with the ID and mark the message for deletion.
     for (var i = 0; i < messages.length; i++) {
-      if (messages[i].tags['id'] == targetId) {
-        messages[i].command = Command.clearMessage;
+      if (messages[i].ircMessage.tags['id'] == targetId) {
+        messages[i].ircMessage.command = Command.clearMessage;
         break;
       }
     }
